@@ -51,6 +51,7 @@ async function run() {
         const email = req.params.email;
         const query = { email }
         const user = await users.findOne(query);
+        console.log({ isBuyer: user?.role === 'buyer' })
         res.send({ isBuyer: user?.role === 'buyer' });
     })
       
