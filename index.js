@@ -33,6 +33,27 @@ async function run() {
       console.log(result);
       res.send(result);
     });
+      
+      //check role for admin, seller, buyer
+      app.get('/admin/:email', async (req, res) => {
+        const email = req.params.email;
+        const query = { email }
+        const user = await users.findOne(query);
+        res.send({ isAdmin: user?.role === 'admin' });
+    })
+      app.get('/seller/:email', async (req, res) => {
+        const email = req.params.email;
+        const query = { email }
+        const user = await users.findOne(query);
+        res.send({ isSeller: user?.role === 'seller' });
+    })
+      app.get('/buyer/:email', async (req, res) => {
+        const email = req.params.email;
+        const query = { email }
+        const user = await users.findOne(query);
+        res.send({ isBuyer: user?.role === 'buyer' });
+    })
+      
 
     //provide jwt token for new users
     app.get("/jwt", async (req, res) => {
