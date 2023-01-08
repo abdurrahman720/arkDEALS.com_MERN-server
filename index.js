@@ -10,6 +10,22 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
+function jwtVerify(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+      return res.status(401).send({error: "UnAuthorized Access"})
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({message: err.message})
+    }
+    req.decoded = decoded;
+    next();
+  })
+}
+
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rtntsud.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -28,9 +44,9 @@ async function run() {
     //add users to database
     app.post("/add-users", async (req, res) => {
       const user = req.body;
-      console.log(user);
+
       const result = await users.insertOne(user);
-      console.log(result);
+
       res.send(result);
     });
       
@@ -51,19 +67,27 @@ async function run() {
         const email = req.params.email;
         const query = { email }
         const user = await users.findOne(query);
-        console.log({ isBuyer: user?.role === 'buyer' })
+
         res.send({ isBuyer: user?.role === 'buyer' });
+      })
+    
+    //get user for profile
+    app.get('/profile/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email }
+      const user = await users.findOne(query);
+      res.send(user);
     })
       
 
     //provide jwt token for new users
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
-      console.log(email);
+   
       const query = { email: email };
       const user = await users.findOne(query);
       if (user) {
-          const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '10d' })
+          const token = jwt.sign({ email }, process.env.ACCESS_TOKEN)
           return res.send({ accessToken: token });
       }
       res.status(403).send({ accessToken: '' })
