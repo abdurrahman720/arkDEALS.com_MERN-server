@@ -26,6 +26,9 @@ function jwtVerify(req, res, next) {
 }
 
 
+
+
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rtntsud.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -40,6 +43,30 @@ async function run() {
     const products = client.db("arkDEALS").collection("products");
     const orders = client.db("arkDEALS").collection("orders");
     const advertisements = client.db("arkDEALS").collection("advertisements");
+
+    //verifyAdmin
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await users.findOne(query);
+
+      if (user?.role !== 'admin') {
+          return res.status(403).send({ message: 'forbidden access' })
+      }
+      next();
+  }
+    //verifySeller
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await users.findOne(query);
+
+      if (user?.role !== 'seller') {
+          return res.status(403).send({ message: 'forbidden access' })
+      }
+      next();
+  }
+
 
     //add users to database
     app.post("/add-users", async (req, res) => {
@@ -102,6 +129,13 @@ async function run() {
       const query = {};
       const getCategories = await categories.find(query).toArray();
       res.send(getCategories)
+    })
+
+    //add products from seller
+    app.post('/add-product', jwtVerify,verifySeller, async (req, res) => {
+      const product = req.body;
+      const result = await products.insertOne(product);
+      res.send(result)
     })
 
   } finally {
