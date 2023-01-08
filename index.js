@@ -72,8 +72,12 @@ async function run() {
       })
     
     //get user for profile
-    app.get('/profile/:email', async (req, res) => {
+    app.get('/profile/:email', jwtVerify, async (req, res) => {
+      const decodedEmail = req.decoded.email;
       const email = req.params.email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({message: 'Invalid email'})
+      }
       const query = { email }
       const user = await users.findOne(query);
       res.send(user);
@@ -91,8 +95,15 @@ async function run() {
           return res.send({ accessToken: token });
       }
       res.status(403).send({ accessToken: '' })
-   
     });
+
+    //get categories
+    app.get('/categories', async (req, res) => {
+      const query = {};
+      const getCategories = await categories.find(query).toArray();
+      res.send(getCategories)
+    })
+
   } finally {
   }
 }
