@@ -184,7 +184,7 @@ async function run() {
     })
 
     //get orders for buyer
-    app.get('/orders',jwtVerify,verifyUser, async (req, res) => {
+    app.get('/myorders',jwtVerify,verifyUser, async (req, res) => {
 
       const email = req.query.email;
       const filter = {
@@ -192,6 +192,16 @@ async function run() {
       }
       const myOrders = await orders.find(filter).toArray();
       res.send(myOrders)
+    })
+
+    //get myproducts for seller
+    app.get('/myproducts', jwtVerify, verifySeller, async (req, res) => {
+      const email = req.query.email;
+      const filter = {
+        sellerEmail: email
+      }
+      const myProducts = await products.find(filter).toArray();
+      res.send(myProducts)
     })
 
 
