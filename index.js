@@ -241,6 +241,18 @@ async function run() {
       res.send(result);
     })
 
+    //get advertisement product
+    app.get('/get-advertisement', async  (req, res)=> {
+      const query = {}
+      const result = await advertisements.find(query).toArray();
+      res.send(result);
+    })
+    app.get('/get-advertisement-sort', async  (req, res)=> {
+      const query = {}
+      const result = await advertisements.find(query).sort({"date": -1}).toArray();
+      res.send(result);
+    })
+
   } finally {
   }
 }
