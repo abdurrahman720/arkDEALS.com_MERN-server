@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 5001;
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -129,6 +129,24 @@ async function run() {
       const query = {};
       const getCategories = await categories.find(query).toArray();
       res.send(getCategories)
+    })
+
+    //get products
+    app.get('/products', async (req, res) => {
+      const query = {};
+      const getProducts = await products.find(query).toArray();
+      res.send(getProducts);
+    })
+
+    //get products by category id and name
+    app.get('/productsByCategory/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const category = await categories.findOne(query);
+      const categoryName = category.categoryName;
+      const pQuery = { categoryName: categoryName };
+      const productsByCategory = await products.find(pQuery).toArray();
+      res.send(productsByCategory)
     })
 
     //add products from seller
