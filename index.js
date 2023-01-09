@@ -138,6 +138,7 @@ async function run() {
       res.send(getProducts);
     })
 
+
     //get products by category id and name
     app.get('/productsByCategory/:id', async (req, res) => {
       const id = req.params.id;
@@ -147,6 +148,14 @@ async function run() {
       const pQuery = { categoryName: categoryName };
       const productsByCategory = await products.find(pQuery).toArray();
       res.send(productsByCategory)
+    })
+
+    //get product by id 
+    app.get('/product/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const getProduct = await products.findOne(query);
+      res.send(getProduct)
     })
 
     //add products from seller
