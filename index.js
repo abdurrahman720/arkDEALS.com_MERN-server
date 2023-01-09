@@ -65,7 +65,17 @@ async function run() {
           return res.status(403).send({ message: 'forbidden access' })
       }
       next();
-  }
+    }
+    //verifyUser
+    const verifyUser = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await users.findOne(query);
+      if (!user) {
+        return res.status(403).send({ message: 'forbidden access' })
+    }
+    next();
+    }
 
 
     //add users to database
@@ -140,7 +150,6 @@ async function run() {
 
     
 
-
     //get products by category id and name
     app.get('/productsByCategory/:id', async (req, res) => {
       const id = req.params.id;
@@ -172,6 +181,17 @@ async function run() {
       const order = req.body;
       const result = await orders.insertOne(order);
       res.send(result)
+    })
+
+    //get orders for buyer
+    app.get('/orders',jwtVerify,verifyUser, async (req, res) => {
+
+      const email = req.query.email;
+      const filter = {
+        buyerEmail: email
+      }
+      const myOrders = await orders.find(filter).toArray();
+      res.send(myOrders)
     })
 
 
