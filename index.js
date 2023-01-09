@@ -219,11 +219,23 @@ async function run() {
       const filter = {
         _id: ObjectId(id)
       }
-      const updateDoc = {
+      const p = await products.findOne(filter);
+      const bool = p.advertised;
+      console.log(bool)
+      let updateDoc = {
         $set: {
-          advertised: { advertised:true ? false : true}
+          advertised: false
         }
       }
+      if (bool === false) {
+         updateDoc = {
+          $set: {
+            advertised: true
+          }
+        }
+      }
+
+      
       const result = await products.updateOne(filter, updateDoc)
       console.log(result);
       res.send(result);
