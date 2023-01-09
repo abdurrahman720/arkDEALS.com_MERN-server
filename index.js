@@ -266,6 +266,21 @@ async function run() {
       res.send(result);
     })
 
+    //paid api
+    app.patch('/orders-paid/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        pId: id
+      }
+      const updateDoc = {
+        $set: {
+          paid: true
+        }
+      }
+      const result = await orders.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+
   } finally {
   }
 }
