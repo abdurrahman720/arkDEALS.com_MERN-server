@@ -42,7 +42,7 @@ async function run() {
     const users = client.db("arkDEALS").collection("users");
     const products = client.db("arkDEALS").collection("products");
     const orders = client.db("arkDEALS").collection("orders");
-    const advertisements = client.db("arkDEALS").collection("advertisements");
+   
 
     //verifyAdmin
     const verifyAdmin = async (req, res, next) => {
@@ -138,6 +138,8 @@ async function run() {
       res.send(getProducts);
     })
 
+    
+
 
     //get products by category id and name
     app.get('/productsByCategory/:id', async (req, res) => {
@@ -164,6 +166,14 @@ async function run() {
       const result = await products.insertOne(product);
       res.send(result)
     })
+
+    //post order bookings
+    app.post('/orders', async (req, res) => {
+      const order = req.body;
+      const result = await orders.insertOne(order);
+      res.send(result)
+    })
+
 
   } finally {
   }
