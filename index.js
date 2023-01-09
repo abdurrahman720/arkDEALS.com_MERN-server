@@ -210,7 +210,6 @@ async function run() {
     app.post('/post-advertisemnet', jwtVerify, verifySeller, async (req, res) => {
       const advertisement = req.body;
       const result = await advertisements.insertOne(advertisement);
-      console.log(result)
       res.send(result);
     })
     //advertisement status
@@ -240,6 +239,20 @@ async function run() {
       console.log(result);
       res.send(result);
     })
+
+    //delete advertisement
+    app.delete('/delete-advertisement/:id',  async (req, res) => {
+      const id = req.params.id;
+      console.log(id)
+      const filter = {
+        id : id
+      }
+      console.log(filter);
+      const result = await advertisements.deleteOne(filter);
+      console.log(result)
+      res.send(result);
+    })
+
 
     //get advertisement product
     app.get('/get-advertisement', async  (req, res)=> {
