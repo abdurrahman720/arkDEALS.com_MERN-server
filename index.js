@@ -42,6 +42,7 @@ async function run() {
     const users = client.db("arkDEALS").collection("users");
     const products = client.db("arkDEALS").collection("products");
     const orders = client.db("arkDEALS").collection("orders");
+    const advertisements = client.db("arkDEALS").collection("advertisements")
    
 
     //verifyAdmin
@@ -49,6 +50,7 @@ async function run() {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
       const user = await users.findOne(query);
+      
 
       if (user?.role !== 'admin') {
           return res.status(403).send({ message: 'forbidden access' })
@@ -204,6 +206,28 @@ async function run() {
       res.send(myProducts)
     })
 
+    //post advertisemnet
+    app.post('/post-advertisemnet', jwtVerify, verifySeller, async (req, res) => {
+      const advertisement = req.body;
+      const result = await advertisements.insertOne(advertisement);
+      console.log(result)
+      res.send(result);
+    })
+    //advertisement status
+    app.patch('/advertisement-status/:id', async (req, res) => {
+      const id = req.params.id
+      const filter = {
+        _id: ObjectId(id)
+      }
+      const updateDoc = {
+        $set: {
+          advertised: { advertised:true ? false : true}
+        }
+      }
+      const result = await products.updateOne(filter, updateDoc)
+      console.log(result);
+      res.send(result);
+    })
 
   } finally {
   }
