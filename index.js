@@ -145,7 +145,9 @@ async function run() {
 
     //get products
     app.get('/products', async (req, res) => {
-      const query = {};
+      const query = {
+        sold: false
+      };
       const getProducts = await products.find(query).toArray();
       res.send(getProducts);
     })
@@ -158,7 +160,7 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const category = await categories.findOne(query);
       const categoryName = category.categoryName;
-      const pQuery = { categoryName: categoryName };
+      const pQuery = { categoryName: categoryName, sold:false };
       const productsByCategory = await products.find(pQuery).toArray();
       res.send(productsByCategory)
     })
@@ -279,6 +281,22 @@ async function run() {
       }
       const result = await orders.updateOne(filter, updateDoc);
       res.send(result);
+    })
+
+    app.patch('/products-paid/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        _id: ObjectId(id)
+      }
+      const options = {upsert: true}
+      const updateDoc = {
+        $set: {
+          advertised: false,
+          sold: true
+        }
+      }
+      const result = await products.updateOne(filter, updateDoc, options)
+      res.send(result)
     })
 
   } finally {
