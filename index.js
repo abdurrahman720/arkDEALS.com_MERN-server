@@ -148,7 +148,7 @@ async function run() {
       const query = {
         sold: false
       };
-      const getProducts = await products.find(query).toArray();
+      const getProducts = await products.find(query).sort({'timeOfPost': -1}).toArray();
       res.send(getProducts);
     })
 
@@ -221,13 +221,16 @@ async function run() {
         _id: ObjectId(id)
       }
       const p = await products.findOne(filter);
-      const bool = p.advertised;
-      console.log(bool)
-      let updateDoc = {
-        $set: {
-          advertised: false
+      let updateDoc = {};
+      const bool = p?.advertised;
+      if (bool === true) {
+        updateDoc = {
+          $set: {
+            advertised: false
+          }
         }
       }
+      
       if (bool === false) {
          updateDoc = {
           $set: {
@@ -238,20 +241,20 @@ async function run() {
 
       
       const result = await products.updateOne(filter, updateDoc)
-      console.log(result);
+   
       res.send(result);
     })
 
     //delete advertisement
     app.delete('/delete-advertisement/:id',  async (req, res) => {
       const id = req.params.id;
-      console.log(id)
+      
       const filter = {
         id : id
       }
-      console.log(filter);
+   
       const result = await advertisements.deleteOne(filter);
-      console.log(result)
+  
       res.send(result);
     })
 
@@ -296,6 +299,16 @@ async function run() {
         }
       }
       const result = await products.updateOne(filter, updateDoc, options)
+      res.send(result)
+    })
+
+    //delete product 
+    app.delete('/delete-product/:id', jwtVerify,verifyUser, async (req, res) => {
+      const id= req.params.id
+      const filter = {
+        _id: ObjectId(id)
+      }
+      const result = await products.deleteOne(filter);
       res.send(result)
     })
 
