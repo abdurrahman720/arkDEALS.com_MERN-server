@@ -100,7 +100,7 @@ async function run() {
         const email = req.params.email;
         const query = { email }
         const user = await users.findOne(query);
-        res.send({ isSeller: user?.role === 'seller' });
+        res.send({ isSeller: user?.role === 'seller', isVerified: user?.verified });
     })
       app.get('/buyer/:email', async (req, res) => {
         const email = req.params.email;
@@ -148,7 +148,7 @@ async function run() {
       const query = {
         sold: false
       };
-      const getProducts = await products.find(query).sort({'timeOfPost': -1}).toArray();
+      const getProducts = await products.find(query).sort({'timeStamp': -1}).toArray();
       res.send(getProducts);
     })
 
@@ -311,6 +311,13 @@ async function run() {
       const result = await products.deleteOne(filter);
       res.send(result)
     })
+    app.get('/allsellers',jwtVerify,verifyAdmin,  async (req, res) => {
+      const query = {
+       role: 'seller'
+      }
+      const result = await users.find(query).toArray();
+      res.send(result)
+  })
 
   } finally {
   }
