@@ -39,6 +39,7 @@ async function run() {
     const products = client.db("arkDEALS").collection("products");
     const orders = client.db("arkDEALS").collection("orders");
     const advertisements = client.db("arkDEALS").collection("advertisements");
+    const reportedItems = client.db("arkDEALS").collection("reportedItems");
 
     //verifyAdmin
     const verifyAdmin = async (req, res, next) => {
@@ -512,7 +513,30 @@ async function run() {
       res.send(result)
 
     })
+
+    //report by buyer
+    app.post('/reported-item-buyer', jwtVerify, verifyUser, async (req, res) => {
+      const repItem = req.body;
+      const result = await reportedItems.insertOne(repItem);
+      res.send(result)
+    })
+
+    //get reported item
+    app.get('/reported-item', jwtVerify, verifyAdmin, async (req, res) => {
+      const filter = {};
+      const result = await reportedItems.find(filter).toArray();
+      res.send(result)
+    })
    
+    //delete reported item
+    app.delete('/reported-item/:id', jwtVerify, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        _id: ObjectId(id)
+      };
+      const result = await reportedItems.deleteOne(filter);
+      res.send(result)
+    })
 
   }
   
