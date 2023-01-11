@@ -532,9 +532,11 @@ async function run() {
     app.delete('/reported-item/:id', jwtVerify, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = {
-        _id: ObjectId(id)
+        pID: id
       };
-      const result = await reportedItems.deleteOne(filter);
+   
+    const result = await reportedItems.deleteMany(filter);
+      
       res.send(result)
     })
 
