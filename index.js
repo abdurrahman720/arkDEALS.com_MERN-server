@@ -328,6 +328,7 @@ async function run() {
         res.send(result);
       }
     );
+
     app.get("/allsellers", jwtVerify, verifyAdmin, async (req, res) => {
       const query = {
         role: "seller",
@@ -431,8 +432,58 @@ async function run() {
     //   3.bookings delete
     //       4.ads delete
 
-  app.delete('/user-delete')
+    app.delete('/user-delete/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = {
+        email: email
+      }
+      const result = await users.deleteOne(filter);
+      res.send(result);
+      
+    })
     
+    app.delete('/ad-delete/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        seller: email,
+      }
+
+      const ads = await advertisements.find(query).toArray();
+      if (ads.length === 0) {
+        return res.send({message: "no ads found"})
+      }
+
+      const result = await advertisements.deleteMany(query);
+      res.send(result);
+    })
+    
+    app.delete('/user-product-delete/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = {
+        sellerEmail: email
+      }
+      const result = await products.deleteMany(filter);
+      res.send(result)
+
+    })
+
+    app.delete('/user-product-delete/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = {
+        sellerEmail: email
+      }
+
+      const getProducts = await products.find(filter).toArray();
+      if (getProducts.length === 0) {
+        return res.send({message: "No products found"})
+      }
+
+      const result = await products.deleteMany(filter);
+      res.send(result)
+
+
+   })
+   
 
   }
   
