@@ -338,7 +338,7 @@ async function run() {
     });
 
     //veify seller
-    app.patch('/verify-seller/:id', async (req, res) => {
+    app.patch('/verify-seller/:id',jwtVerify,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = {
         _id: ObjectId(id)
@@ -397,7 +397,7 @@ async function run() {
     });
 
     //update verified status on advertisement
-    app.patch('/verify-ad/:email', async (req, res) => {
+    app.patch('/verify-ad/:email',jwtVerify,verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const query = {
         seller: email,
@@ -432,7 +432,7 @@ async function run() {
     //   3.bookings delete
     //       4.ads delete
 
-    app.delete('/user-delete/:email', async (req, res) => {
+    app.delete('/user-delete/:email',jwtVerify,verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const filter = {
         email: email
@@ -457,17 +457,8 @@ async function run() {
       res.send(result);
     })
     
-    app.delete('/user-product-delete/:email', async (req, res) => {
-      const email = req.params.email;
-      const filter = {
-        sellerEmail: email
-      }
-      const result = await products.deleteMany(filter);
-      res.send(result)
 
-    })
-
-    app.delete('/user-product-delete/:email', async (req, res) => {
+    app.delete('/user-product-delete/:email',jwtVerify,verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const filter = {
         sellerEmail: email
@@ -480,9 +471,23 @@ async function run() {
 
       const result = await products.deleteMany(filter);
       res.send(result)
+    })
+    
+    app.delete('/orders-delete/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = {
+        seller: email
+      }
 
+      const getProducts = await orders.find(filter).toArray();
+      if (getProducts.length === 0) {
+        return res.send({message: "No products found"})
+      }
 
-   })
+      const result = await orders.deleteMany(filter);
+      res.send(result)
+
+    })
    
 
   }
