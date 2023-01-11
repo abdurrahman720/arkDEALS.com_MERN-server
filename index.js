@@ -188,7 +188,7 @@ async function run() {
     });
 
     //post order bookings
-    app.post("/orders", async (req, res) => {
+    app.post("/orders",jwtVerify,verifyUser, async (req, res) => {
       const order = req.body;
       const result = await orders.insertOne(order);
       res.send(result);
@@ -287,7 +287,7 @@ async function run() {
     app.patch("/orders-paid/:id", async (req, res) => {
       const id = req.params.id;
       const filter = {
-        pId: id,
+        _id: ObjectId(id)
       };
       const updateDoc = {
         $set: {
@@ -314,6 +314,7 @@ async function run() {
       res.send(result);
     });
 
+
     //delete product
     app.delete(
       "/delete-product/:id",
@@ -336,6 +337,14 @@ async function run() {
       const result = await users.find(query).toArray();
       res.send(result);
     });
+
+    app.get('/allbuyers', jwtVerify, verifyAdmin, async (req, res) => {
+      const query = {
+        role: "buyer"
+      }
+      const result = await users.find(query).toArray();
+      res.send(result);
+    })
 
     //veify seller
     app.patch('/verify-seller/:id',jwtVerify,verifyAdmin, async (req, res) => {
@@ -477,6 +486,21 @@ async function run() {
       const email = req.params.email;
       const filter = {
         seller: email
+      }
+
+      const getProducts = await orders.find(filter).toArray();
+      if (getProducts.length === 0) {
+        return res.send({message: "No products found"})
+      }
+
+      const result = await orders.deleteMany(filter);
+      res.send(result)
+
+    })
+    app.delete('/buyer-orders-delete/:email',jwtVerify,verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      const filter = {
+        buyerEmail: email
       }
 
       const getProducts = await orders.find(filter).toArray();
