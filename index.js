@@ -13,21 +13,17 @@ app.use(express.json());
 function jwtVerify(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-      return res.status(401).send({error: "UnAuthorized Access"})
+    return res.status(401).send({ error: "UnAuthorized Access" });
   }
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
     if (err) {
-      return res.status(403).send({message: err.message})
+      return res.status(403).send({ message: err.message });
     }
     req.decoded = decoded;
     next();
-  })
+  });
 }
-
-
-
-
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rtntsud.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -42,43 +38,40 @@ async function run() {
     const users = client.db("arkDEALS").collection("users");
     const products = client.db("arkDEALS").collection("products");
     const orders = client.db("arkDEALS").collection("orders");
-    const advertisements = client.db("arkDEALS").collection("advertisements")
-   
+    const advertisements = client.db("arkDEALS").collection("advertisements");
 
     //verifyAdmin
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
       const user = await users.findOne(query);
-      
 
-      if (user?.role !== 'admin') {
-          return res.status(403).send({ message: 'forbidden access' })
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
       }
       next();
-  }
+    };
     //verifySeller
     const verifySeller = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
       const user = await users.findOne(query);
 
-      if (user?.role !== 'seller') {
-          return res.status(403).send({ message: 'forbidden access' })
+      if (user?.role !== "seller") {
+        return res.status(403).send({ message: "forbidden access" });
       }
       next();
-    }
+    };
     //verifyUser
     const verifyUser = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
       const user = await users.findOne(query);
       if (!user) {
-        return res.status(403).send({ message: 'forbidden access' })
-    }
-    next();
-    }
-
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
 
     //add users to database
     app.post("/add-users", async (req, res) => {
@@ -88,238 +81,363 @@ async function run() {
 
       res.send(result);
     });
-      
-      //check role for admin, seller, buyer
-      app.get('/admin/:email', async (req, res) => {
-        const email = req.params.email;
-        const query = { email }
-        const user = await users.findOne(query);
-        res.send({ isAdmin: user?.role === 'admin' });
-    })
-      app.get('/seller/:email', async (req, res) => {
-        const email = req.params.email;
-        const query = { email }
-        const user = await users.findOne(query);
-        res.send({ isSeller: user?.role === 'seller', isVerified: user?.verified });
-    })
-      app.get('/buyer/:email', async (req, res) => {
-        const email = req.params.email;
-        const query = { email }
-        const user = await users.findOne(query);
 
-        res.send({ isBuyer: user?.role === 'buyer' });
-      })
-    
+    //check role for admin, seller, buyer
+    app.get("/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await users.findOne(query);
+      res.send({ isAdmin: user?.role === "admin" });
+    });
+    app.get("/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await users.findOne(query);
+
+      res.send({ isSeller: user?.role === "seller" });
+    });
+    app.get("/buyer/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await users.findOne(query);
+
+      res.send({ isBuyer: user?.role === "buyer" });
+    });
+
+    //is verified
+    app.get("/seller-verified/:email", async (req, res) => {
+      const email = req.params.email;
+
+      const filter = {
+        email: email,
+        role: "seller",
+      };
+      const seller = await users.findOne(filter);
+      const isverified = seller.verified;
+      res.send({ isverified: isverified });
+    });
+
     //get user for profile
-    app.get('/profile/:email', jwtVerify, async (req, res) => {
+    app.get("/profile/:email", jwtVerify, async (req, res) => {
       const decodedEmail = req.decoded.email;
       const email = req.params.email;
       if (decodedEmail !== email) {
-        return res.status(403).send({message: 'Invalid email'})
+        return res.status(403).send({ message: "Invalid email" });
       }
-      const query = { email }
+      const query = { email };
       const user = await users.findOne(query);
       res.send(user);
-    })
-      
+    });
 
     //provide jwt token for new users
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
-   
+
       const query = { email: email };
       const user = await users.findOne(query);
       if (user) {
-          const token = jwt.sign({ email }, process.env.ACCESS_TOKEN)
-          return res.send({ accessToken: token });
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
+        return res.send({ accessToken: token });
       }
-      res.status(403).send({ accessToken: '' })
+      res.status(403).send({ accessToken: "" });
     });
 
     //get categories
-    app.get('/categories', async (req, res) => {
+    app.get("/categories", async (req, res) => {
       const query = {};
       const getCategories = await categories.find(query).toArray();
-      res.send(getCategories)
-    })
+      res.send(getCategories);
+    });
 
     //get products
-    app.get('/products', async (req, res) => {
+    app.get("/products", async (req, res) => {
       const query = {
-        sold: false
+        sold: false,
       };
-      const getProducts = await products.find(query).sort({'timeStamp': -1}).toArray();
+      const getProducts = await products
+        .find(query)
+        .sort({ timeStamp: -1 })
+        .toArray();
       res.send(getProducts);
-    })
-
-    
+    });
 
     //get products by category id and name
-    app.get('/productsByCategory/:id', async (req, res) => {
+    app.get("/productsByCategory/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const category = await categories.findOne(query);
       const categoryName = category.categoryName;
-      const pQuery = { categoryName: categoryName, sold:false };
+      const pQuery = { categoryName: categoryName, sold: false };
       const productsByCategory = await products.find(pQuery).toArray();
-      res.send(productsByCategory)
-    })
+      res.send(productsByCategory);
+    });
 
-    //get product by id 
-    app.get('/product/:id', async (req, res) => {
+    //get product by id
+    app.get("/product/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const getProduct = await products.findOne(query);
-      res.send(getProduct)
-    })
+      res.send(getProduct);
+    });
 
     //add products from seller
-    app.post('/add-product', jwtVerify,verifySeller, async (req, res) => {
+    app.post("/add-product", jwtVerify, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await products.insertOne(product);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     //post order bookings
-    app.post('/orders', async (req, res) => {
+    app.post("/orders", async (req, res) => {
       const order = req.body;
       const result = await orders.insertOne(order);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     //get orders for buyer
-    app.get('/myorders',jwtVerify,verifyUser, async (req, res) => {
-
+    app.get("/myorders", jwtVerify, verifyUser, async (req, res) => {
       const email = req.query.email;
       const filter = {
-        buyerEmail: email
-      }
+        buyerEmail: email,
+      };
       const myOrders = await orders.find(filter).toArray();
-      res.send(myOrders)
-    })
+      res.send(myOrders);
+    });
 
     //get myproducts for seller
-    app.get('/myproducts', jwtVerify, verifySeller, async (req, res) => {
+    app.get("/myproducts", jwtVerify, verifySeller, async (req, res) => {
       const email = req.query.email;
       const filter = {
-        sellerEmail: email
-      }
+        sellerEmail: email,
+      };
       const myProducts = await products.find(filter).toArray();
-      res.send(myProducts)
-    })
+      res.send(myProducts);
+    });
 
     //post advertisemnet
-    app.post('/post-advertisemnet', jwtVerify, verifySeller, async (req, res) => {
-      const advertisement = req.body;
-      const result = await advertisements.insertOne(advertisement);
-      res.send(result);
-    })
-    //advertisement status
-    app.patch('/advertisement-status/:id', async (req, res) => {
-      const id = req.params.id
-      const filter = {
-        _id: ObjectId(id)
+    app.post(
+      "/post-advertisemnet",
+      jwtVerify,
+      verifySeller,
+      async (req, res) => {
+        const advertisement = req.body;
+        const result = await advertisements.insertOne(advertisement);
+        res.send(result);
       }
+    );
+    //advertisement status
+    app.patch("/advertisement-status/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        _id: ObjectId(id),
+      };
       const p = await products.findOne(filter);
       let updateDoc = {};
       const bool = p?.advertised;
       if (bool === true) {
         updateDoc = {
           $set: {
-            advertised: false
-          }
-        }
-      }
-      
-      if (bool === false) {
-         updateDoc = {
-          $set: {
-            advertised: true
-          }
-        }
+            advertised: false,
+          },
+        };
       }
 
-      
-      const result = await products.updateOne(filter, updateDoc)
-   
+      if (bool === false) {
+        updateDoc = {
+          $set: {
+            advertised: true,
+          },
+        };
+      }
+
+      const result = await products.updateOne(filter, updateDoc);
+
       res.send(result);
-    })
+    });
 
     //delete advertisement
-    app.delete('/delete-advertisement/:id',  async (req, res) => {
+    app.delete("/delete-advertisement/:id", async (req, res) => {
       const id = req.params.id;
-      
-      const filter = {
-        id : id
-      }
-   
-      const result = await advertisements.deleteOne(filter);
-  
-      res.send(result);
-    })
 
+      const filter = {
+        id: id,
+      };
+
+      const result = await advertisements.deleteOne(filter);
+
+      res.send(result);
+    });
 
     //get advertisement product
-    app.get('/get-advertisement', async  (req, res)=> {
-      const query = {}
+    app.get("/get-advertisement", async (req, res) => {
+      const query = {};
       const result = await advertisements.find(query).toArray();
       res.send(result);
-    })
-    app.get('/get-advertisement-sort', async  (req, res)=> {
-      const query = {}
-      const result = await advertisements.find(query).sort({"date": -1}).toArray();
+    });
+    app.get("/get-advertisement-sort", async (req, res) => {
+      const query = {};
+      const result = await advertisements
+        .find(query)
+        .sort({ date: -1 })
+        .toArray();
       res.send(result);
-    })
+    });
 
     //paid api
-    app.patch('/orders-paid/:id', async (req, res) => {
+    app.patch("/orders-paid/:id", async (req, res) => {
       const id = req.params.id;
       const filter = {
-        pId: id
-      }
+        pId: id,
+      };
       const updateDoc = {
         $set: {
-          paid: true
-        }
-      }
+          paid: true,
+        },
+      };
       const result = await orders.updateOne(filter, updateDoc);
       res.send(result);
-    })
+    });
 
-    app.patch('/products-paid/:id', async (req, res) => {
+    app.patch("/products-paid/:id", async (req, res) => {
       const id = req.params.id;
       const filter = {
-        _id: ObjectId(id)
-      }
-      const options = {upsert: true}
+        _id: ObjectId(id),
+      };
+      const options = { upsert: true };
       const updateDoc = {
         $set: {
           advertised: false,
-          sold: true
-        }
-      }
-      const result = await products.updateOne(filter, updateDoc, options)
-      res.send(result)
-    })
+          sold: true,
+        },
+      };
+      const result = await products.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
 
-    //delete product 
-    app.delete('/delete-product/:id', jwtVerify,verifyUser, async (req, res) => {
-      const id= req.params.id
+    //delete product
+    app.delete(
+      "/delete-product/:id",
+      jwtVerify,
+      verifyUser,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = {
+          _id: ObjectId(id),
+        };
+        const result = await products.deleteOne(filter);
+        res.send(result);
+      }
+    );
+    app.get("/allsellers", jwtVerify, verifyAdmin, async (req, res) => {
+      const query = {
+        role: "seller",
+      };
+      const result = await users.find(query).toArray();
+      res.send(result);
+    });
+
+    //veify seller
+    app.patch('/verify-seller/:id', async (req, res) => {
+      const id = req.params.id;
       const filter = {
         _id: ObjectId(id)
       }
-      const result = await products.deleteOne(filter);
-      res.send(result)
-    })
-    app.get('/allsellers',jwtVerify,verifyAdmin,  async (req, res) => {
-      const query = {
-       role: 'seller'
+      let updateDoc = {};
+      const options = { upsert: true }
+      const user = await users.findOne(filter);
+      const bool = user?.verified;
+      if (bool === true) {
+        updateDoc = {
+          $set: {
+            verified: false,
+          },
+        };
       }
-      const result = await users.find(query).toArray();
-      res.send(result)
-  })
 
-  } finally {
+      if (bool === false) {
+        updateDoc = {
+          $set: {
+            verified: true,
+          },
+        };
+      }
+      const result = await users.updateOne(filter, updateDoc, options);
+
+      console.log(result);
+      res.send(result)
+
+    });
+
+    //update verified status on products
+    app.patch('/verify-product/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = {
+        sellerEmail: email
+      }
+      const options = { upsert: true }
+      
+      const allProducts = await products.find(filter).toArray();
+      let updateDoc={}
+      allProducts.forEach(product => {
+        const bool = product.verified;
+        if (bool === true) {
+          updateDoc = { $set: { verified: false } };
+        }
+        else {
+          updateDoc = { $set: { verified: true } };
+        }
+      })
+
+      const result = await products.updateMany(filter, updateDoc,options);
+
+      res.send(result);
+
+
+    });
+
+    //update verified status on advertisement
+    app.patch('/verify-ad/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        seller: email,
+      }
+
+      const ads = await advertisements.find(query).toArray();
+      if (ads.length === 0) {
+        return res.send({message: "no ads found"})
+      }
+      let updateDoc = {};
+      const options = { upsert: true }
+      
+      ads.forEach(ad => {
+        const bool = ad.verified;
+        if (bool === true) {
+          updateDoc = { $set: { verified: false } };
+        }
+        else {
+          updateDoc = { $set: { verified: true } };
+        }
+      })
+
+      const result = await advertisements.updateMany(query, updateDoc,options);
+
+      res.send(result);
+
+    })
+    
+    // delete user:
+    // 1. user delete
+    //   2.product delete
+    //   3.bookings delete
+    //       4.ads delete
+
+  app.delete('/user-delete')
+    
+
+  }
+  
+  
+  finally {
   }
 }
 run().catch((err) => console.log(err));
