@@ -189,7 +189,7 @@ async function run() {
     });
 
     //post order bookings
-    app.post("/orders",jwtVerify,verifyUser, async (req, res) => {
+    app.post("/orders", jwtVerify, verifyUser, async (req, res) => {
       const order = req.body;
       const result = await orders.insertOne(order);
       res.send(result);
@@ -213,6 +213,42 @@ async function run() {
       const myOrders = await orders.find(filter).toArray();
       res.send(myOrders);
     });
+
+    //confirm meeting
+    app.patch(
+      "/confirm-meeting/:id",
+      jwtVerify,
+      verifySeller,
+      async (req, res) => {
+        const id = req.params.id;
+
+        const filter = {
+          _id: ObjectId(id),
+        };
+        let updateDoc;
+        const options = { upsert: true };
+        const order = await orders.findOne(filter);
+
+        const bool = order?.meeting;
+
+        if (bool) {
+          updateDoc = {
+            $set: {
+              meeting: false,
+            },
+          };
+        } else {
+          updateDoc = {
+            $set: {
+              meeting: true,
+            },
+          };
+        }
+
+        const result = await orders.updateOne(filter, updateDoc, options);
+        res.send(result);
+      }
+    );
 
     //get myproducts for seller
     app.get("/myproducts", jwtVerify, verifySeller, async (req, res) => {
@@ -297,7 +333,7 @@ async function run() {
     app.patch("/orders-paid/:id", async (req, res) => {
       const id = req.params.id;
       const filter = {
-        _id: ObjectId(id)
+        _id: ObjectId(id),
       };
       const updateDoc = {
         $set: {
@@ -324,7 +360,6 @@ async function run() {
       res.send(result);
     });
 
-
     //delete product
     app.delete(
       "/delete-product/:id",
@@ -348,211 +383,227 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/allbuyers', jwtVerify, verifyAdmin, async (req, res) => {
+    app.get("/allbuyers", jwtVerify, verifyAdmin, async (req, res) => {
       const query = {
-        role: "buyer"
-      }
+        role: "buyer",
+      };
       const result = await users.find(query).toArray();
       res.send(result);
-    })
-
-    //veify seller
-    app.patch('/verify-seller/:id',jwtVerify,verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const filter = {
-        _id: ObjectId(id)
-      }
-      let updateDoc = {};
-      const options = { upsert: true }
-      const user = await users.findOne(filter);
-      const bool = user?.verified;
-      if (bool === true) {
-        updateDoc = {
-          $set: {
-            verified: false,
-          },
-        };
-      }
-
-      if (bool === false) {
-        updateDoc = {
-          $set: {
-            verified: true,
-          },
-        };
-      }
-      const result = await users.updateOne(filter, updateDoc, options);
-
-      console.log(result);
-      res.send(result)
-
     });
 
+    //veify seller
+    app.patch(
+      "/verify-seller/:id",
+      jwtVerify,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = {
+          _id: ObjectId(id),
+        };
+        let updateDoc = {};
+        const options = { upsert: true };
+        const user = await users.findOne(filter);
+        const bool = user?.verified;
+        if (bool === true) {
+          updateDoc = {
+            $set: {
+              verified: false,
+            },
+          };
+        }
+
+        if (bool === false) {
+          updateDoc = {
+            $set: {
+              verified: true,
+            },
+          };
+        }
+        const result = await users.updateOne(filter, updateDoc, options);
+
+        console.log(result);
+        res.send(result);
+      }
+    );
+
     //update verified status on products
-    app.patch('/verify-product/:email', async (req, res) => {
+    app.patch("/verify-product/:email", async (req, res) => {
       const email = req.params.email;
       const filter = {
-        sellerEmail: email
-      }
-      const options = { upsert: true }
-      
+        sellerEmail: email,
+      };
+      const options = { upsert: true };
+
       const allProducts = await products.find(filter).toArray();
-      let updateDoc={}
-      allProducts.forEach(product => {
+      let updateDoc = {};
+      allProducts.forEach((product) => {
         const bool = product.verified;
         if (bool === true) {
           updateDoc = { $set: { verified: false } };
-        }
-        else {
+        } else {
           updateDoc = { $set: { verified: true } };
         }
-      })
+      });
 
-      const result = await products.updateMany(filter, updateDoc,options);
+      const result = await products.updateMany(filter, updateDoc, options);
 
       res.send(result);
-
-
     });
 
     //update verified status on advertisement
-    app.patch('/verify-ad/:email',jwtVerify,verifyAdmin, async (req, res) => {
+    app.patch("/verify-ad/:email", jwtVerify, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const query = {
         seller: email,
-      }
+      };
 
       const ads = await advertisements.find(query).toArray();
       if (ads.length === 0) {
-        return res.send({message: "no ads found"})
+        return res.send({ message: "no ads found" });
       }
       let updateDoc = {};
-      const options = { upsert: true }
-      
-      ads.forEach(ad => {
+      const options = { upsert: true };
+
+      ads.forEach((ad) => {
         const bool = ad.verified;
         if (bool === true) {
           updateDoc = { $set: { verified: false } };
-        }
-        else {
+        } else {
           updateDoc = { $set: { verified: true } };
         }
-      })
+      });
 
-      const result = await advertisements.updateMany(query, updateDoc,options);
+      const result = await advertisements.updateMany(query, updateDoc, options);
 
       res.send(result);
+    });
 
-    })
-    
     // delete user:
     // 1. user delete
     //   2.product delete
     //   3.bookings delete
     //       4.ads delete
 
-    app.delete('/user-delete/:email',jwtVerify,verifyAdmin, async (req, res) => {
-      const email = req.params.email;
-      const filter = {
-        email: email
+    app.delete(
+      "/user-delete/:email",
+      jwtVerify,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const filter = {
+          email: email,
+        };
+        const result = await users.deleteOne(filter);
+        res.send(result);
       }
-      const result = await users.deleteOne(filter);
-      res.send(result);
-      
-    })
-    
-    app.delete('/ad-delete/:email', async (req, res) => {
+    );
+
+    app.delete("/ad-delete/:email", async (req, res) => {
       const email = req.params.email;
       const query = {
         seller: email,
-      }
+      };
 
       const ads = await advertisements.find(query).toArray();
       if (ads.length === 0) {
-        return res.send({message: "no ads found"})
+        return res.send({ message: "no ads found" });
       }
 
       const result = await advertisements.deleteMany(query);
       res.send(result);
-    })
-    
+    });
 
-    app.delete('/user-product-delete/:email',jwtVerify,verifyAdmin, async (req, res) => {
+    app.delete(
+      "/user-product-delete/:email",
+      jwtVerify,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const filter = {
+          sellerEmail: email,
+        };
+
+        const getProducts = await products.find(filter).toArray();
+        if (getProducts.length === 0) {
+          return res.send({ message: "No products found" });
+        }
+
+        const result = await products.deleteMany(filter);
+        res.send(result);
+      }
+    );
+
+    app.delete("/orders-delete/:email", async (req, res) => {
       const email = req.params.email;
       const filter = {
-        sellerEmail: email
-      }
-
-      const getProducts = await products.find(filter).toArray();
-      if (getProducts.length === 0) {
-        return res.send({message: "No products found"})
-      }
-
-      const result = await products.deleteMany(filter);
-      res.send(result)
-    })
-    
-    app.delete('/orders-delete/:email', async (req, res) => {
-      const email = req.params.email;
-      const filter = {
-        seller: email
-      }
+        seller: email,
+      };
 
       const getProducts = await orders.find(filter).toArray();
       if (getProducts.length === 0) {
-        return res.send({message: "No products found"})
+        return res.send({ message: "No products found" });
       }
 
       const result = await orders.deleteMany(filter);
-      res.send(result)
+      res.send(result);
+    });
+    app.delete(
+      "/buyer-orders-delete/:email",
+      jwtVerify,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const filter = {
+          buyerEmail: email,
+        };
 
-    })
-    app.delete('/buyer-orders-delete/:email',jwtVerify,verifyAdmin, async (req, res) => {
-      const email = req.params.email;
-      const filter = {
-        buyerEmail: email
+        const getProducts = await orders.find(filter).toArray();
+        if (getProducts.length === 0) {
+          return res.send({ message: "No products found" });
+        }
+
+        const result = await orders.deleteMany(filter);
+        res.send(result);
       }
-
-      const getProducts = await orders.find(filter).toArray();
-      if (getProducts.length === 0) {
-        return res.send({message: "No products found"})
-      }
-
-      const result = await orders.deleteMany(filter);
-      res.send(result)
-
-    })
+    );
 
     //report by buyer
-    app.post('/reported-item-buyer', jwtVerify, verifyUser, async (req, res) => {
-      const repItem = req.body;
-      const result = await reportedItems.insertOne(repItem);
-      res.send(result)
-    })
+    app.post(
+      "/reported-item-buyer",
+      jwtVerify,
+      verifyUser,
+      async (req, res) => {
+        const repItem = req.body;
+        const result = await reportedItems.insertOne(repItem);
+        res.send(result);
+      }
+    );
 
     //get reported item
-    app.get('/reported-item', jwtVerify, verifyAdmin, async (req, res) => {
+    app.get("/reported-item", jwtVerify, verifyAdmin, async (req, res) => {
       const filter = {};
       const result = await reportedItems.find(filter).toArray();
-      res.send(result)
-    })
-   
-    //delete reported item
-    app.delete('/reported-item/:id', jwtVerify, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const filter = {
-        pID: id
-      };
-   
-    const result = await reportedItems.deleteMany(filter);
-      
-      res.send(result)
-    })
+      res.send(result);
+    });
 
-  }
-  
-  
-  finally {
+    //delete reported item
+    app.delete(
+      "/reported-item/:id",
+      jwtVerify,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = {
+          pID: id,
+        };
+
+        const result = await reportedItems.deleteMany(filter);
+
+        res.send(result);
+      }
+    );
+  } finally {
   }
 }
 run().catch((err) => console.log(err));
