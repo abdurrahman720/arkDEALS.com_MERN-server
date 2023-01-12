@@ -595,18 +595,28 @@ async function run() {
       }
     );
 
-    //get reported item
+    //get reported item for admin
     app.get("/reported-item", jwtVerify, verifyAdmin, async (req, res) => {
       const filter = {};
       const result = await reportedItems.find(filter).toArray();
       res.send(result);
     });
 
+    //get reported item for buyer
+    app.get('/reported-item-buyer', async (req, res) => {
+      const email = req.query.email;
+      const filter = {
+        reporterEmail: email
+      }
+      const result = await reportedItems.find(filter).toArray();
+      res.send(result)
+    })
+
     //delete reported item
     app.delete(
       "/reported-item/:id",
       jwtVerify,
-      verifyAdmin,
+      verifyUser,
       async (req, res) => {
         const id = req.params.id;
         const filter = {
