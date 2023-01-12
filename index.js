@@ -4,11 +4,14 @@ const port = process.env.PORT || 5001;
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe") ('sk_test_51MPSTiCU4MTlW0YJ77ZFKxogXHuULng5c91tt2x8BlXsR36AID6y1XqfH9GQMD8Eqt0Q93kSW0LDEamSuuhhQZZR00cPPkqhY6')
 require("dotenv").config();
 
 // middleware
 app.use(cors());
 app.use(express.json());
+
+console.log(process.env.STRIPE_SECRET);
 
 function jwtVerify(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -205,6 +208,17 @@ async function run() {
       const myOrders = await orders.find(filter).toArray();
       res.send(myOrders);
     });
+
+    //get order using id
+    app.get("/orders/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        _id: ObjectId(id)
+      }
+      const result = await orders.findOne(filter);
+      res.send(result)
+    })
+
     //get orders for seller
     app.get("/mybuyers", jwtVerify, verifySeller, async (req, res) => {
       const email = req.query.email;
@@ -334,6 +348,8 @@ async function run() {
     //paid api for order
     app.patch("/orders-paid/:id", async (req, res) => {
       const id = req.params.id;
+      const tid = req.body.tID;
+      console.log(tid);
       const filter = {
         _id: ObjectId(id),
       };
@@ -628,6 +644,31 @@ async function run() {
         res.send(result);
       }
     );
+
+    //stripe payment
+    app.post('/create-payment-intent', async (req, res) => {
+      const order = req.body;
+      const price = order.resalePrice;
+      console.log(price)
+      const amount = price * 100;
+      console.log(amount)
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        "payment_method_types": [
+          "card"
+        ]
+      })
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+
+    })
+
+
+
   } finally {
   }
 }
