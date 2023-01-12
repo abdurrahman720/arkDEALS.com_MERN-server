@@ -201,12 +201,14 @@ async function run() {
       const filter = {
         buyerEmail: email,
       };
+
       const myOrders = await orders.find(filter).toArray();
       res.send(myOrders);
     });
     //get orders for seller
     app.get("/mybuyers", jwtVerify, verifySeller, async (req, res) => {
       const email = req.query.email;
+     
       const filter = {
         seller: email,
       };
@@ -329,7 +331,7 @@ async function run() {
       res.send(result);
     });
 
-    //paid api
+    //paid api for order
     app.patch("/orders-paid/:id", async (req, res) => {
       const id = req.params.id;
       const filter = {
@@ -343,6 +345,19 @@ async function run() {
       const result = await orders.updateOne(filter, updateDoc);
       res.send(result);
     });
+    
+    //delete duplicate order (must be called after order paid api)
+    app.delete('/orders-paid-dup/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = {
+        pId: id,
+        paid: false
+      }
+
+      const result = await orders.deleteMany(filter);
+      res.send(result)
+
+    })
 
     app.patch("/products-paid/:id", async (req, res) => {
       const id = req.params.id;
