@@ -204,6 +204,15 @@ async function run() {
       const myOrders = await orders.find(filter).toArray();
       res.send(myOrders);
     });
+    //get orders for seller
+    app.get("/mybuyers", jwtVerify, verifySeller, async (req, res) => {
+      const email = req.query.email;
+      const filter = {
+        seller: email,
+      };
+      const myOrders = await orders.find(filter).toArray();
+      res.send(myOrders);
+    });
 
     //get myproducts for seller
     app.get("/myproducts", jwtVerify, verifySeller, async (req, res) => {
