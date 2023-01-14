@@ -348,17 +348,20 @@ async function run() {
     //paid api for order
     app.patch("/orders-paid/:id", async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const tid = req.body.tID;
       console.log(tid);
       const filter = {
         _id: ObjectId(id),
       };
+      const options = {upsert:true};
       const updateDoc = {
         $set: {
           paid: true,
+          transactionID: tid
         },
       };
-      const result = await orders.updateOne(filter, updateDoc);
+      const result = await orders.updateOne(filter, updateDoc,options);
       res.send(result);
     });
     
